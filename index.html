@@ -9,8 +9,11 @@
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
     <script src="https://unpkg.com/lucide@latest"></script>
     <script>
+        // =========================================================
+        // KONFIGURASI SUPABASE (GANTI KUNCI DI BAWAH DENGAN API KEY MU)
+        // =========================================================
         const SUPABASE_URL = 'https://mbhdkjuqejcilqifpeoi.supabase.co';
-        const SUPABASE_KEY = 'sb_publishable_ptBIvCMuOXLjOV3UR3HQbQ_vDI6cXWf'; // <--- PASTI KAN DIISI KEY KAMU
+        const SUPABASE_KEY = 'sb_publishable_ptBIvCMuOXLjOV3UR3HQbQ_vDI6cXWf';
         const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     </script>
     <style>
@@ -23,14 +26,12 @@
 
     <!-- MODAL POPUP PENGATURAN -->
     <div id="settings-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
-        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-md shadow-2xl relative animate-in fade-in zoom-in duration-150">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-md shadow-2xl relative">
             <button onclick="closeSettingsModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">
                 <i data-lucide="x" class="w-5 h-5"></i>
             </button>
             <h3 id="modal-title" class="text-xl font-bold text-emerald-400 mb-2">Pengaturan</h3>
-            <div id="modal-content" class="text-sm text-slate-300 space-y-3 mt-4">
-                <!-- Content injected dynamically -->
-            </div>
+            <div id="modal-content" class="text-sm text-slate-300 space-y-3 mt-4"></div>
             <button onclick="closeSettingsModal()" class="mt-6 w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2.5 rounded-xl transition">Tutup</button>
         </div>
     </div>
@@ -89,7 +90,6 @@
             </div>
         </div>
     </div>
-
     <!-- MAIN APP STRUCTURE -->
     <div id="app-view" class="hidden flex w-full h-full">
         <!-- Sidebar Left -->
@@ -210,6 +210,7 @@
         </div>
     </div>
 
+    <!-- JAVASCRIPT SYSTEM -->
     <script>
         let currentUser = null;
         let activeChatUser = null;
@@ -256,10 +257,10 @@
 
             const { error } = await supabase.from('users').insert([{ id, name, role: 'staf', password: pass }]);
             if (error) {
-                alert('Gagal mendaftar. ID mungkin sudah terpakai.');
+                alert('Gagal mendaftar. Pastikan ID unik dan belum terpakai.');
                 return;
             }
-            alert('Pendaftaran sukses! Silakan login.');
+            alert('Pendaftaran sukses! Silakan masuk dengan ID yang baru dibuat.');
             toggleAuth('login');
         }
 
@@ -311,7 +312,7 @@
             }]);
 
             if (error) {
-                alert('Gagal mengirim permintaan pertemanan.');
+                alert('Gagal mengirim permintaan. Pastikan ID benar dan tidak ada duplikat.');
             } else {
                 alert('Permintaan pertemanan terkirim!');
                 document.getElementById('target-id-input').value = '';
@@ -352,7 +353,7 @@
 
                 chatContainer.innerHTML = friendUsers.map(u => `
                     <div onclick="selectChat('${u.id}', '${u.name}')" class="p-3 bg-slate-800/40 hover:bg-slate-800 border border-slate-800 rounded-xl cursor-pointer flex items-center gap-3 transition">
-                        <div class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">${u.name.charAt(0)}</div>
+                        <div class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">${u.name.charAt(0).toUpperCase()}</div>
                         <div>
                             <div class="text-sm font-semibold text-white">${u.name}</div>
                             <div class="text-xs text-slate-400">${u.id}</div>
