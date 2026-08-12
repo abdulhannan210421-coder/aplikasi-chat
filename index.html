@@ -1,461 +1,430 @@
 <!DOCTYPE html>
 <html lang="id">
 <head>
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>TTQ Chat</title>
-  <script src="https://cdn.tailwindcss.com"></script>
-  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-  <link href="https://fonts.googleapis.com/css2?family=Segoe+UI:wght@400;500;600;700&display=swap" rel="stylesheet">
-  <script src="https://unpkg.com/lucide@latest"></script>
-  <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
-    ::-webkit-scrollbar { width: 6px; }
-    ::-webkit-scrollbar-thumb { background: #cccccc; border-radius: 10px; }
-    .chat-bg {
-      background-color: #efeae2;
-      background-image: radial-gradient(#d1c7bd 0.75px, transparent 0.75px);
-      background-size: 16px 16px;
-    }
-    .bubble-out { background-color: #d9fdd3; }
-    .bubble-in { background-color: #ffffff; }
-  </style>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TTQ Chat</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+        const SUPABASE_URL = 'https://mbhdkjuqejcilqifpeoi.supabase.co';
+        const SUPABASE_KEY = 'sb_publishable_ptBIvCMuOXLjOV3UR3HQbQ_vDI6cXWf'; // <--- PASTI KAN DIISI KEY KAMU
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+    </script>
+    <style>
+        body { font-family: 'Plus Jakarta Sans', sans-serif; }
+        ::-webkit-scrollbar { width: 4px; }
+        ::-webkit-scrollbar-thumb { background: #334155; border-radius: 10px; }
+    </style>
 </head>
-<body class="bg-[#d1d7db] h-screen flex overflow-hidden">
+<body class="bg-slate-950 text-slate-100 h-screen flex flex-col justify-between overflow-hidden">
 
-  <!-- SCREEN 1: LOGIN & REGISTER -->
-  <div id="auth-screen" class="fixed inset-0 z-50 bg-[#e9edef] flex items-center justify-center p-4">
-    <div class="bg-white border border-gray-200 p-8 rounded-2xl w-full max-w-md shadow-lg">
-      <div class="flex justify-center mb-4">
-        <div class="w-16 h-16 bg-[#25d366] rounded-full flex items-center justify-center text-white">
-          <i data-lucide="message-square" class="w-10 h-10"></i>
+    <!-- MODAL POPUP PENGATURAN -->
+    <div id="settings-modal" class="hidden fixed inset-0 bg-black/70 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-2xl p-6 w-full max-w-md shadow-2xl relative animate-in fade-in zoom-in duration-150">
+            <button onclick="closeSettingsModal()" class="absolute top-4 right-4 text-slate-400 hover:text-white">
+                <i data-lucide="x" class="w-5 h-5"></i>
+            </button>
+            <h3 id="modal-title" class="text-xl font-bold text-emerald-400 mb-2">Pengaturan</h3>
+            <div id="modal-content" class="text-sm text-slate-300 space-y-3 mt-4">
+                <!-- Content injected dynamically -->
+            </div>
+            <button onclick="closeSettingsModal()" class="mt-6 w-full bg-emerald-600 hover:bg-emerald-500 text-white font-medium py-2.5 rounded-xl transition">Tutup</button>
         </div>
-      </div>
-      <h2 id="auth-title" class="text-2xl font-bold text-center mb-1 text-[#111b21]">Login System</h2>
-      <p id="auth-subtitle" class="text-xs text-[#667781] text-center mb-6">Masukan ID dan Password untuk melanjutkan</p>
-
-      <form id="auth-form" class="space-y-4">
-        <div>
-          <label class="text-xs font-semibold text-[#111b21]">Nomor ID Unik</label>
-          <input type="text" id="auth-id" required class="w-full bg-[#f0f2f5] border border-gray-300 rounded-lg p-3 text-sm focus:outline-none focus:border-[#00a884] mt-1 text-[#111b21]" placeholder="Misal: WK01 / STAF001">
-        </div>
-        <div id="name-field" class="hidden">
-          <label class="text-xs font-semibold text-[#111b21]">Nama Lengkap</label>
-          <input type="text" id="auth-name" class="w-full bg-[#f0f2f5] border border-gray-300 rounded-lg p-3 text-sm focus:outline-none focus:border-[#00a884] mt-1 text-[#111b21]" placeholder="Nama Anda">
-        </div>
-        <div id="coordinator-field" class="hidden">
-          <label class="text-xs font-semibold text-[#111b21]">Pilih Koordinator</label>
-          <select id="auth-coordinator" class="w-full bg-[#f0f2f5] border border-gray-300 rounded-lg p-3 text-sm focus:outline-none focus:border-[#00a884] mt-1 text-[#111b21]">
-            <option value="">-- Pilih Koordinator --</option>
-          </select>
-        </div>
-        <div>
-          <label class="text-xs font-semibold text-[#111b21]">Password</label>
-          <input type="password" id="auth-password" required class="w-full bg-[#f0f2f5] border border-gray-300 rounded-lg p-3 text-sm focus:outline-none focus:border-[#00a884] mt-1 text-[#111b21]" placeholder="••••••••">
-        </div>
-
-        <button type="submit" id="auth-submit-btn" class="w-full bg-[#00a884] hover:bg-[#008f6f] text-white font-bold p-3 rounded-lg transition text-sm">Masuk Sekarang</button>
-      </form>
-
-      <div class="mt-4 text-center">
-        <button id="toggle-auth-btn" class="text-xs text-[#00a884] font-semibold hover:underline">Belum punya akun Staf? Daftar di sini</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- SCREEN 2: MAIN WHATSAPP DASHBOARD -->
-  <div id="app-screen" class="hidden w-full h-full flex">
-
-    <!-- 1. NAVIGATION RAIL (PALING KIRI) -->
-    <div class="w-16 bg-[#f0f2f5] border-r border-[#e9edef] flex flex-col justify-between items-center py-3 select-none z-20">
-      <div class="flex flex-col items-center space-y-3 w-full">
-        <button onclick="switchTab('chats')" class="p-3 rounded-xl hover:bg-[#e9edef] text-[#111b21] relative" title="Sembang / Chat">
-          <i data-lucide="message-square" class="w-5 h-5"></i>
-        </button>
-        <button onclick="openNewChatPanel()" class="p-3 text-[#54656f] hover:bg-[#e9edef] rounded-xl" title="Tambah / Obrolan Baru"><i data-lucide="user-plus" class="w-5 h-5"></i></button>
-        <button onclick="switchTab('settings')" class="p-3 text-[#54656f] hover:bg-[#e9edef] rounded-xl" title="Pengaturan"><i data-lucide="settings" class="w-5 h-5"></i></button>
-      </div>
-
-      <div class="flex flex-col items-center space-y-3 w-full">
-        <div onclick="openProfilePanel()" id="user-avatar-rail" title="Profil Saya" class="w-9 h-9 rounded-full bg-[#00a884] text-white font-bold flex items-center justify-center text-sm cursor-pointer">U</div>
-        <button id="logout-btn" title="Keluar" class="p-3 text-[#54656f] hover:text-red-500 rounded-xl"><i data-lucide="log-out" class="w-5 h-5"></i></button>
-      </div>
     </div>
 
-    <!-- 2. SIDEBAR PANEL (KOLOM KEDUA - CHATS / PROFIL / SETTINGS) -->
-    <aside class="w-80 md:w-96 bg-white border-r border-[#e9edef] flex flex-col relative z-10">
-      
-      <!-- TAB A: CHAT LIST -->
-      <div id="tab-chats" class="flex flex-col h-full">
-        <div class="p-4 bg-white flex justify-between items-center">
-          <h1 class="text-xl font-bold text-[#00a884]">TTQ Chat</h1>
-          <div class="flex items-center space-x-1 text-[#54656f]">
-            <button onclick="openNewChatPanel()" class="p-2 hover:bg-[#f0f2f5] rounded-full" title="Chat Baru"><i data-lucide="square-plus" class="w-5 h-5"></i></button>
-            <button onclick="openCreateGroupModal()" class="p-2 hover:bg-[#f0f2f5] rounded-full" title="Buat Grup"><i data-lucide="users-round" class="w-5 h-5"></i></button>
-          </div>
-        </div>
-
-        <div class="px-3 py-1">
-          <div class="bg-[#f0f2f5] flex items-center px-3 py-1.5 rounded-lg">
-            <i data-lucide="search" class="w-4 h-4 text-[#54656f] mr-3"></i>
-            <input type="text" placeholder="Cari atau mulai obrolan baru" class="bg-transparent text-xs w-full focus:outline-none">
-          </div>
-        </div>
-
-        <!-- Banner Persetujuan Staf -->
-        <div id="pending-section" class="hidden m-2 p-3 bg-[#e7fce8] border border-[#25d366]/30 rounded-xl">
-          <p class="text-xs font-bold text-[#008069] flex items-center mb-2"><i data-lucide="user-check" class="w-4 h-4 mr-1"></i> Persetujuan Staf</p>
-          <div id="pending-list" class="space-y-2 max-h-32 overflow-y-auto"></div>
-        </div>
-
-        <!-- Permintaan Pertemanan -->
-        <div id="friend-requests-section" class="hidden m-2 p-3 bg-blue-50 border border-blue-200 rounded-xl">
-          <p class="text-xs font-bold text-blue-700 flex items-center mb-2"><i data-lucide="user-plus" class="w-4 h-4 mr-1"></i> Permintaan Pertemanan</p>
-          <div id="friend-requests-list" class="space-y-2 max-h-32 overflow-y-auto"></div>
-        </div>
-
-        <div class="flex-1 overflow-y-auto" id="room-list"></div>
-      </div>
-
-      <!-- TAB B: EDIT PROFIL (Screenshot 2) -->
-      <div id="tab-profile" class="hidden flex-col h-full bg-[#f0f2f5]">
-        <div class="p-4 bg-[#008069] text-white flex items-center space-x-4">
-          <button onclick="switchTab('chats')"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
-          <h2 class="font-bold text-base">Edit Profil</h2>
-        </div>
-        <div class="p-6 flex flex-col items-center">
-          <div class="relative group cursor-pointer mb-6">
-            <div id="profile-avatar-big" class="w-40 h-40 rounded-full bg-[#00a884] text-white font-bold flex items-center justify-center text-4xl shadow-md">U</div>
-          </div>
-          <div class="w-full bg-white p-4 rounded-xl shadow-sm space-y-4">
-            <div>
-              <label class="text-[11px] text-[#008069] font-bold uppercase">Nama Anda</label>
-              <div class="flex items-center justify-between border-b py-1">
-                <input type="text" id="edit-profile-name" class="text-sm font-semibold text-[#111b21] bg-transparent focus:outline-none flex-1">
-                <button onclick="updateProfileName()"><i data-lucide="pencil" class="w-4 h-4 text-[#54656f]"></i></button>
-              </div>
+    <!-- VIEW LOGIN -->
+    <div id="login-view" class="flex-1 flex items-center justify-center p-4 bg-slate-950">
+        <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl w-full max-w-md shadow-2xl">
+            <div class="flex flex-col items-center mb-6">
+                <div class="w-14 h-14 bg-emerald-500/10 text-emerald-400 rounded-2xl flex items-center justify-center mb-3">
+                    <i data-lucide="message-square" class="w-8 h-8"></i>
+                </div>
+                <h1 class="text-2xl font-bold text-white">Login System</h1>
+                <p class="text-sm text-slate-400">Masukan ID dan Password untuk melanjutkan</p>
             </div>
-            <div>
-              <label class="text-[11px] text-[#008069] font-bold uppercase">Info / About</label>
-              <div class="flex items-center justify-between border-b py-1">
-                <input type="text" id="edit-profile-about" class="text-sm text-[#111b21] bg-transparent focus:outline-none flex-1" placeholder="Info anda...">
-                <button onclick="updateProfileAbout()"><i data-lucide="pencil" class="w-4 h-4 text-[#54656f]"></i></button>
-              </div>
+            <form onsubmit="handleLogin(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Nomor ID Unik</label>
+                    <input type="text" id="login-id" required placeholder="Contoh: WK01" class="w-full bg-slate-800/60 border border-slate-700/80 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Password</label>
+                    <input type="password" id="login-pass" required placeholder="••••••••" class="w-full bg-slate-800/60 border border-slate-700/80 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 transition">
+                </div>
+                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-xl transition shadow-lg shadow-emerald-600/20">Masuk Sekarang</button>
+            </form>
+            <div class="mt-6 text-center text-sm">
+                <button onclick="toggleAuth('register')" class="text-emerald-400 hover:underline">Belum punya akun Staf? Daftar di sini</button>
             </div>
-          </div>
         </div>
-      </div>
+    </div>
 
-      <!-- TAB C: PENGATURAN (Screenshot 1) -->
-      <div id="tab-settings" class="hidden flex-col h-full bg-[#f0f2f5]">
-        <div class="p-4 bg-[#008069] text-white flex items-center space-x-4">
-          <button onclick="switchTab('chats')"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
-          <h2 class="font-bold text-base">Pengaturan</h2>
-        </div>
-        <div class="p-3 space-y-2">
-          <div onclick="openProfilePanel()" class="bg-white p-3 rounded-xl flex items-center space-x-3 cursor-pointer hover:bg-gray-50">
-            <div id="settings-avatar" class="w-12 h-12 rounded-full bg-[#00a884] text-white font-bold flex items-center justify-center">U</div>
-            <div>
-              <h4 id="settings-name" class="font-bold text-sm text-[#111b21]">-</h4>
-              <p id="settings-about" class="text-xs text-[#667781]">-</p>
+    <!-- VIEW REGISTER -->
+    <div id="register-view" class="hidden flex-1 flex items-center justify-center p-4 bg-slate-950">
+        <div class="bg-slate-900 border border-slate-800 p-8 rounded-2xl w-full max-w-md shadow-2xl">
+            <div class="flex flex-col items-center mb-6">
+                <h1 class="text-2xl font-bold text-white">Daftar Akun Staf</h1>
+                <p class="text-sm text-slate-400">Buat ID Staf baru kamu</p>
             </div>
-          </div>
-          <div class="bg-white rounded-xl divide-y text-xs text-[#111b21]">
-            <div class="p-3 flex items-center space-x-3 cursor-pointer hover:bg-gray-50"><i data-lucide="key" class="w-4 h-4 text-[#54656f]"></i><span>Akun & Keamanan</span></div>
-            <div class="p-3 flex items-center space-x-3 cursor-pointer hover:bg-gray-50"><i data-lucide="lock" class="w-4 h-4 text-[#54656f]"></i><span>Privasi Chat</span></div>
-            <div class="p-3 flex items-center space-x-3 cursor-pointer hover:bg-gray-50"><i data-lucide="palette" class="w-4 h-4 text-[#54656f]"></i><span>Tema & Wallpaper</span></div>
-          </div>
-        </div>
-      </div>
-
-      <!-- TAB D: TAMBAH KONTAK / MINTA PERTEMANAN (Screenshot 3) -->
-      <div id="tab-newchat" class="hidden flex-col h-full bg-[#f0f2f5]">
-        <div class="p-4 bg-[#008069] text-white flex items-center space-x-4">
-          <button onclick="switchTab('chats')"><i data-lucide="arrow-left" class="w-5 h-5"></i></button>
-          <h2 class="font-bold text-base">Obrolan baru</h2>
-        </div>
-        <div class="p-3 space-y-3">
-          <div class="bg-white p-3 rounded-xl shadow-sm">
-            <label class="text-xs font-bold text-[#008069] mb-1 block">Cari ID Teman / Staf</label>
-            <div class="flex space-x-2">
-              <input type="text" id="search-friend-id" placeholder="Masukkan ID (misal: STAF002)" class="flex-1 bg-[#f0f2f5] p-2 rounded-lg text-xs focus:outline-none">
-              <button onclick="sendFriendRequest()" class="bg-[#00a884] text-white px-3 py-2 rounded-lg text-xs font-bold">Minta Berteman</button>
+            <form onsubmit="handleRegister(event)" class="space-y-4">
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Nomor ID Unik Staf</label>
+                    <input type="text" id="reg-id" required placeholder="Contoh: STAF01" class="w-full bg-slate-800/60 border border-slate-700/80 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Nama Lengkap</label>
+                    <input type="text" id="reg-name" required placeholder="Nama Anda" class="w-full bg-slate-800/60 border border-slate-700/80 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 transition">
+                </div>
+                <div>
+                    <label class="block text-xs font-semibold text-slate-400 uppercase mb-1">Password</label>
+                    <input type="password" id="reg-pass" required placeholder="••••••••" class="w-full bg-slate-800/60 border border-slate-700/80 rounded-xl px-4 py-3 text-white focus:outline-none focus:border-emerald-500 transition">
+                </div>
+                <button type="submit" class="w-full bg-emerald-600 hover:bg-emerald-500 text-white font-semibold py-3 rounded-xl transition">Daftar Sekarang</button>
+            </form>
+            <div class="mt-6 text-center text-sm">
+                <button onclick="toggleAuth('login')" class="text-emerald-400 hover:underline">Sudah punya akun? Login di sini</button>
             </div>
-          </div>
-          <p class="text-xs font-bold text-[#54656f] px-1">Kontak Anda</p>
-          <div id="contacts-list" class="space-y-1 overflow-y-auto max-h-96"></div>
         </div>
-      </div>
+    </div>
 
-    </aside>
-
-    <!-- 3. CHAT AREA UTAMA -->
-    <main class="flex-1 flex flex-col bg-[#efeae2] relative chat-bg">
-      
-      <!-- Header Chat -->
-      <header id="chat-header" class="hidden p-3 bg-[#f0f2f5] border-b border-[#e9edef] justify-between items-center z-10">
-        <div class="flex items-center space-x-3 cursor-pointer" onclick="toggleRightPanel()">
-          <div class="w-10 h-10 rounded-full bg-[#00a884] text-white flex items-center justify-center font-bold text-sm" id="room-avatar">#</div>
-          <div>
-            <h3 class="font-semibold text-sm text-[#111b21]" id="current-room-title">-</h3>
-            <p class="text-[11px] text-[#667781]">Klik untuk info detail</p>
-          </div>
-        </div>
-        <div class="flex items-center space-x-4 text-[#54656f]">
-          <button title="Panggilan Video"><i data-lucide="video" class="w-5 h-5"></i></button>
-          <button title="Panggilan Suara"><i data-lucide="phone" class="w-5 h-5"></i></button>
-          <button onclick="toggleRightPanel()" title="Info"><i data-lucide="more-vertical" class="w-5 h-5"></i></button>
-        </div>
-      </header>
-
-      <!-- Messages Area -->
-      <div id="messages-container" class="flex-1 overflow-y-auto p-6 space-y-2">
-        <div id="empty-chat-state" class="h-full flex flex-col items-center justify-center text-center">
-          <h2 class="text-2xl font-light text-[#41525d] mb-2">TTQ Chat Web App</h2>
-          <p class="text-xs text-[#667781] max-w-sm">Kirim dan terima pesan tim secara realtime.</p>
-        </div>
-      </div>
-
-      <!-- Form Input Pesan & Pop-up Media (Screenshot 4) -->
-      <div id="chat-input-container" class="hidden relative">
-        
-        <!-- POPUP MENU ATTACHMENT / MEDIA -->
-        <div id="media-popup" class="hidden absolute bottom-14 left-4 bg-white p-2 rounded-2xl shadow-xl border border-gray-100 space-y-2 z-30">
-          <button onclick="triggerFileUpload('image/*')" class="flex items-center space-x-3 w-full p-2 hover:bg-gray-100 rounded-xl text-xs text-[#111b21]">
-            <i data-lucide="image" class="w-5 h-5 text-purple-500"></i><span>Foto & Video</span>
-          </button>
-          <button onclick="triggerFileUpload('*/*')" class="flex items-center space-x-3 w-full p-2 hover:bg-gray-100 rounded-xl text-xs text-[#111b21]">
-            <i data-lucide="file-text" class="w-5 h-5 text-blue-500"></i><span>Dokumen / File</span>
-          </button>
-          <input type="file" id="hidden-file-input" class="hidden" onchange="handleFileSelect(event)">
-        </div>
-
-        <form id="chat-form" class="p-3 bg-[#f0f2f5] border-t border-[#e9edef] flex items-center space-x-3 z-10">
-          <button type="button" onclick="toggleMediaPopup()" class="text-[#54656f] hover:text-[#111b21]"><i data-lucide="plus" class="w-6 h-6"></i></button>
-          <input type="text" id="chat-input" placeholder="Ketik pesan" required class="flex-1 bg-white rounded-lg px-4 py-2 text-xs text-[#111b21] focus:outline-none">
-          <button type="submit" class="text-[#00a884] hover:text-[#008f6f]"><i data-lucide="send" class="w-6 h-6"></i></button>
-        </form>
-      </div>
-
-    </main>
-
-    <!-- 4. PANEL RIGHT INFO (INFO GRUP / KONTAK - Screenshot 6) -->
-    <aside id="right-panel" class="hidden w-80 bg-white border-l border-[#e9edef] flex-col z-20">
-      <div class="p-4 bg-[#f0f2f5] flex items-center space-x-4 border-b">
-        <button onclick="toggleRightPanel()"><i data-lucide="x" class="w-5 h-5 text-[#54656f]"></i></button>
-        <h3 class="font-bold text-sm text-[#111b21]">Info Detail</h3>
-      </div>
-      <div class="p-6 flex flex-col items-center border-b">
-        <div id="right-avatar" class="w-24 h-24 rounded-full bg-[#00a884] text-white font-bold flex items-center justify-center text-2xl mb-3">#</div>
-        <h3 id="right-title" class="font-bold text-base text-[#111b21]">-</h3>
-        <p id="right-sub" class="text-xs text-[#667781]">-</p>
-      </div>
-    </aside>
-
-  </div>
-
-  <script>
-    const SUPABASE_URL = 'https://mbhdkjuqejcilqifpeoi.supabase.co';
-    const SUPABASE_ANON_KEY = 'sb_publishable_ptBIvCMuOXLjOV3UR3HQbQ_vDI6cXWf';
-    const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
-
-    let currentUser = null;
-    let currentRoomId = null;
-    let isRegisterMode = false;
-    let activeChannel = null;
-
-    // AUTH TOGGLE & SUBMIT
-    const authScreen = document.getElementById('auth-screen');
-    const appScreen = document.getElementById('app-screen');
-    const toggleAuthBtn = document.getElementById('toggle-auth-btn');
-
-    toggleAuthBtn.addEventListener('click', async () => {
-      isRegisterMode = !isRegisterMode;
-      document.getElementById('auth-title').innerText = isRegisterMode ? 'Pendaftaran Staf' : 'Login System';
-      document.getElementById('auth-submit-btn').innerText = isRegisterMode ? 'Daftar' : 'Masuk';
-      document.getElementById('name-field').classList.toggle('hidden', !isRegisterMode);
-      document.getElementById('coordinator-field').classList.toggle('hidden', !isRegisterMode);
-
-      if (isRegisterMode) {
-        const { data } = await supabaseClient.from('users').select('id, name').eq('role', 'koordinator');
-        const select = document.getElementById('auth-coordinator');
-        select.innerHTML = '<option value="">-- Pilih Koordinator --</option>';
-        data?.forEach(c => select.innerHTML += `<option value="${c.id}">${c.name}</option>`);
-      }
-    });
-
-    document.getElementById('auth-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const id = document.getElementById('auth-id').value.trim();
-      const password = document.getElementById('auth-password').value.trim();
-
-      if (isRegisterMode) {
-        const name = document.getElementById('auth-name').value.trim();
-        const coordId = document.getElementById('auth-coordinator').value;
-        await supabaseClient.from('users').insert([{ id, name, password, role: 'staf', pending_coordinator_id: coordId }]);
-        alert('Berhasil Daftar! Tunggu persetujuan koordinator.');
-        location.reload();
-      } else {
-        const { data } = await supabaseClient.from('users').select('*').eq('id', id).eq('password', password).single();
-        if (!data) return alert('ID atau Password Salah!');
-        currentUser = data;
-        initApp();
-      }
-    });
-
-    function initApp() {
-      authScreen.classList.add('hidden');
-      appScreen.classList.remove('hidden');
-      document.getElementById('user-avatar-rail').innerText = currentUser.name.charAt(0).toUpperCase();
-      document.getElementById('settings-name').innerText = currentUser.name;
-      document.getElementById('settings-about').innerText = currentUser.about || 'Ada!';
-      document.getElementById('edit-profile-name').value = currentUser.name;
-      document.getElementById('edit-profile-about').value = currentUser.about || 'Ada!';
-
-      loadPendingStaff();
-      loadFriendRequests();
-      loadRooms();
-    }
-
-    // SWITCH TABS
-    function switchTab(tab) {
-      ['chats', 'profile', 'settings', 'newchat'].forEach(t => {
-        document.getElementById(`tab-${t}`).classList.add('hidden');
-      });
-      document.getElementById(`tab-${tab}`).classList.remove('hidden');
-      if (tab === 'newchat') loadContacts();
-    }
-
-    function openProfilePanel() { switchTab('profile'); }
-    function openNewChatPanel() { switchTab('newchat'); }
-
-    // PERTEMANAN (FRIENDSHIPS)
-    async function sendFriendRequest() {
-      const friendId = document.getElementById('search-friend-id').value.trim();
-      if (!friendId || friendId === currentUser.id) return alert('ID Tidak Valid!');
-
-      const { data: userExists } = await supabaseClient.from('users').select('id').eq('id', friendId).single();
-      if (!userExists) return alert('Pengguna dengan ID tersebut tidak ditemukan!');
-
-      await supabaseClient.from('friendships').insert([{ user_id_1: currentUser.id, user_id_2: friendId, status: 'pending', action_user_id: currentUser.id }]);
-      alert('Permintaan pertemanan terkirim!');
-    }
-
-    async function loadFriendRequests() {
-      const { data } = await supabaseClient.from('friendships').select('*, users!friendships_action_user_id_fkey(name)').eq('status', 'pending').neq('action_user_id', currentUser.id);
-      const section = document.getElementById('friend-requests-section');
-      const list = document.getElementById('friend-requests-list');
-
-      if (data && data.length > 0) {
-        section.classList.remove('hidden');
-        list.innerHTML = '';
-        data.forEach(req => {
-          list.innerHTML += `
-            <div class="flex items-center justify-between bg-white p-2 rounded-lg text-xs">
-              <span><b>${req.user_id_1 === currentUser.id ? req.user_id_2 : req.user_id_1}</b></span>
-              <button onclick="acceptFriend('${req.id}')" class="bg-[#00a884] text-white px-2 py-1 rounded text-[10px]">Terima</button>
+    <!-- MAIN APP STRUCTURE -->
+    <div id="app-view" class="hidden flex w-full h-full">
+        <!-- Sidebar Left -->
+        <div class="w-16 bg-slate-900 border-r border-slate-800 flex flex-col items-center py-4 justify-between">
+            <div class="flex flex-col gap-6">
+                <button onclick="switchTab('chats')" class="p-3 text-slate-400 hover:text-emerald-400 rounded-xl hover:bg-slate-800 transition relative">
+                    <i data-lucide="message-square" class="w-6 h-6"></i>
+                </button>
+                <button onclick="switchTab('friends')" class="p-3 text-slate-400 hover:text-emerald-400 rounded-xl hover:bg-slate-800 transition relative">
+                    <i data-lucide="user-plus" class="w-6 h-6"></i>
+                    <span id="friend-badge" class="hidden absolute top-2 right-2 w-2.5 h-2.5 bg-emerald-500 rounded-full animate-ping"></span>
+                </button>
+                <button onclick="switchTab('settings')" class="p-3 text-slate-400 hover:text-emerald-400 rounded-xl hover:bg-slate-800 transition">
+                    <i data-lucide="settings" class="w-6 h-6"></i>
+                </button>
             </div>
-          `;
+            <button onclick="handleLogout()" class="p-3 text-rose-400 hover:bg-rose-500/10 rounded-xl transition">
+                <i data-lucide="log-out" class="w-6 h-6"></i>
+            </button>
+        </div>
+
+        <!-- Panel Lists -->
+        <div class="w-80 bg-slate-900/50 border-r border-slate-800 flex flex-col">
+            <div class="p-4 border-b border-slate-800 flex items-center justify-between">
+                <h1 id="panel-title" class="text-lg font-bold text-white flex items-center gap-2">
+                    <i data-lucide="message-circle" class="w-5 h-5 text-emerald-400"></i> TTQ Chat
+                </h1>
+            </div>
+
+            <!-- CHATS PANEL -->
+            <div id="tab-chats" class="flex-1 overflow-y-auto p-3 space-y-2">
+                <div class="text-xs font-semibold text-slate-500 uppercase px-2 mb-2">Daftar Obrolan</div>
+                <div id="chat-list-container" class="space-y-1">
+                    <p class="text-xs text-slate-500 p-2">Belum ada percakapan aktif.</p>
+                </div>
+            </div>
+
+            <!-- FRIENDS PANEL -->
+            <div id="tab-friends" class="hidden flex-1 overflow-y-auto p-3 space-y-4">
+                <div>
+                    <h3 class="text-xs font-semibold text-slate-500 uppercase px-2 mb-2">Tambah Teman (Kirim Permintaan)</h3>
+                    <div class="flex gap-2">
+                        <input type="text" id="target-id-input" placeholder="Masukkan ID Target..." class="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-3 py-2 text-xs focus:outline-none focus:border-emerald-500">
+                        <button onclick="sendFriendRequest()" class="bg-emerald-600 hover:bg-emerald-500 px-3 py-2 rounded-xl text-xs font-semibold">Kirim</button>
+                    </div>
+                </div>
+                <div>
+                    <h3 class="text-xs font-semibold text-slate-500 uppercase px-2 mb-2">Permintaan Pertemanan Masuk</h3>
+                    <div id="friend-requests-list" class="space-y-2">
+                        <p class="text-xs text-slate-500 p-2">Tidak ada permintaan pertemanan.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- SETTINGS PANEL -->
+            <div id="tab-settings" class="hidden flex-1 overflow-y-auto p-4 space-y-2">
+                <div class="p-3 bg-slate-800/40 rounded-xl border border-slate-800 flex items-center gap-3 mb-4">
+                    <div class="w-10 h-10 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-lg" id="user-avatar-text">U</div>
+                    <div>
+                        <div class="font-bold text-white text-sm" id="user-display-name">User Name</div>
+                        <div class="text-xs text-slate-400" id="user-display-role">Role</div>
+                    </div>
+                </div>
+                <h3 class="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-2">Menu Pengaturan</h3>
+                <button onclick="openModal('Akun & Keamanan', '<b>ID:</b> ' + currentUser.id + '<br><b>Nama:</b> ' + currentUser.name + '<br><b>Akses:</b> ' + currentUser.role)" class="w-full text-left p-3 rounded-xl bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 flex items-center gap-3 transition">
+                    <i data-lucide="key" class="w-5 h-5 text-emerald-400"></i>
+                    <div>
+                        <div class="text-sm font-medium">Akun & Keamanan</div>
+                        <div class="text-xs text-slate-400">Detail data akun kamu</div>
+                    </div>
+                </button>
+                <button onclick="openModal('Privasi Chat', 'Semua pesan dienkripsi dan disimpan dengan aman menggunakan jaringan database Supabase.')" class="w-full text-left p-3 rounded-xl bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 flex items-center gap-3 transition">
+                    <i data-lucide="lock" class="w-5 h-5 text-emerald-400"></i>
+                    <div>
+                        <div class="text-sm font-medium">Privasi Chat</div>
+                        <div class="text-xs text-slate-400">Sistem keamanan enkripsi</div>
+                    </div>
+                </button>
+                <button onclick="openModal('Tema & Wallpaper', 'Aplikasi menggunakan skema warna Mode Gelap (Dark Slate & Emerald Green) bawaan TTQ Chat.')" class="w-full text-left p-3 rounded-xl bg-slate-800/50 hover:bg-slate-800 border border-slate-700/50 flex items-center gap-3 transition">
+                    <i data-lucide="palette" class="w-5 h-5 text-emerald-400"></i>
+                    <div>
+                        <div class="text-sm font-medium">Tema & Wallpaper</div>
+                        <div class="text-xs text-slate-400">Tampilan aplikasi</div>
+                    </div>
+                </button>
+            </div>
+        </div>
+
+        <!-- Main Chat Area -->
+        <div class="flex-1 bg-slate-950 flex flex-col h-full relative">
+            <div id="no-chat-selected" class="flex-1 flex flex-col items-center justify-center text-center p-8">
+                <div class="w-16 h-16 bg-emerald-500/10 text-emerald-400 rounded-2xl flex items-center justify-center mb-4">
+                    <i data-lucide="message-square" class="w-8 h-8"></i>
+                </div>
+                <h2 class="text-2xl font-bold text-white mb-2">TTQ Chat Web App</h2>
+                <p class="text-slate-400 max-w-sm">Pilih obrolan dari panel di sebelah kiri untuk mulai berkirim pesan secara realtime.</p>
+            </div>
+
+            <!-- Active Chat View -->
+            <div id="active-chat-view" class="hidden flex-1 flex flex-col h-full">
+                <!-- Chat Header -->
+                <div class="p-4 bg-slate-900/80 border-b border-slate-800 flex items-center justify-between">
+                    <div>
+                        <div id="chat-target-name" class="font-bold text-white">Target Name</div>
+                        <div id="chat-target-id" class="text-xs text-slate-400">Target ID</div>
+                    </div>
+                </div>
+                <!-- Messages Box -->
+                <div id="messages-container" class="flex-1 overflow-y-auto p-4 space-y-3">
+                    <!-- Messages will be injected here -->
+                </div>
+                <!-- Message Input -->
+                <form onsubmit="sendMessage(event)" class="p-4 bg-slate-900/80 border-t border-slate-800 flex gap-2">
+                    <input type="text" id="message-input" placeholder="Tulis pesan..." required class="flex-1 bg-slate-800 border border-slate-700 rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-emerald-500">
+                    <button type="submit" class="bg-emerald-600 hover:bg-emerald-500 px-5 rounded-xl font-semibold text-sm transition">Kirim</button>
+                </form>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let currentUser = null;
+        let activeChatUser = null;
+
+        document.addEventListener("DOMContentLoaded", () => {
+            lucide.createIcons();
+            const savedUser = localStorage.getItem('ttq_user');
+            if (savedUser) {
+                currentUser = JSON.parse(savedUser);
+                showApp();
+            }
         });
-      }
-    }
 
-    async function acceptFriend(reqId) {
-      await supabaseClient.from('friendships').update({ status: 'accepted' }).eq('id', reqId);
-      alert('Pertemanan diterima!');
-      loadFriendRequests();
-      loadRooms();
-    }
+        function toggleAuth(view) {
+            if (view === 'register') {
+                document.getElementById('login-view').classList.add('hidden');
+                document.getElementById('register-view').classList.remove('hidden');
+            } else {
+                document.getElementById('register-view').classList.add('hidden');
+                document.getElementById('login-view').classList.remove('hidden');
+            }
+        }
 
-    // LOAD ROOMS
-    async function loadRooms() {
-      let rooms = [{ id: '00000000-0000-0000-0000-000000000001', name: '📢 Grup Utama Kantor' }];
-      const roomList = document.getElementById('room-list');
-      
-      roomList.innerHTML = '';
-      rooms.forEach(room => {
-        roomList.innerHTML += `
-          <div onclick="selectRoom('${room.id}', '${room.name}')" class="p-3 border-b border-[#e9edef] hover:bg-[#f0f2f5] cursor-pointer flex items-center space-x-3">
-            <div class="w-12 h-12 rounded-full bg-[#00a884] text-white flex items-center justify-center font-bold text-base flex-shrink-0">${room.name.charAt(0)}</div>
-            <div class="flex-1"><h4 class="text-sm font-semibold text-[#111b21]">${room.name}</h4><p class="text-xs text-[#667781]">Obrolan grup</p></div>
-          </div>
-        `;
-      });
-    }
+        async function handleLogin(e) {
+            e.preventDefault();
+            const id = document.getElementById('login-id').value.trim();
+            const pass = document.getElementById('login-pass').value.trim();
 
-    async function selectRoom(roomId, roomName) {
-      currentRoomId = roomId;
-      document.getElementById('empty-chat-state').classList.add('hidden');
-      document.getElementById('chat-header').classList.remove('hidden');
-      document.getElementById('chat-header').classList.add('flex');
-      document.getElementById('chat-input-container').classList.remove('hidden');
+            const { data, error } = await supabase.from('users').select('*').eq('id', id).single();
+            if (error || !data || data.password !== pass) {
+                alert('ID atau Password Salah!');
+                return;
+            }
+            currentUser = data;
+            localStorage.setItem('ttq_user', JSON.stringify(data));
+            showApp();
+        }
 
-      document.getElementById('current-room-title').innerText = roomName;
-      document.getElementById('room-avatar').innerText = roomName.charAt(0);
+        async function handleRegister(e) {
+            e.preventDefault();
+            const id = document.getElementById('reg-id').value.trim();
+            const name = document.getElementById('reg-name').value.trim();
+            const pass = document.getElementById('reg-pass').value.trim();
 
-      loadMessages();
+            const { error } = await supabase.from('users').insert([{ id, name, role: 'staf', password: pass }]);
+            if (error) {
+                alert('Gagal mendaftar. ID mungkin sudah terpakai.');
+                return;
+            }
+            alert('Pendaftaran sukses! Silakan login.');
+            toggleAuth('login');
+        }
 
-      if (activeChannel) supabaseClient.removeChannel(activeChannel);
-      activeChannel = supabaseClient.channel(`room-${roomId}`)
-        .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'messages', filter: `room_id=eq.${roomId}` }, 
-          payload => renderMessage(payload.new)
-        ).subscribe();
-    }
+        function showApp() {
+            document.getElementById('login-view').classList.add('hidden');
+            document.getElementById('register-view').classList.add('hidden');
+            document.getElementById('app-view').classList.remove('hidden');
 
-    async function loadMessages() {
-      const messagesContainer = document.getElementById('messages-container');
-      messagesContainer.innerHTML = '';
-      const { data } = await supabaseClient.from('messages').select('*, users(name)').eq('room_id', currentRoomId).order('created_at', { ascending: true });
-      data?.forEach(renderMessage);
-      messagesContainer.scrollTop = messagesContainer.scrollHeight;
-    }
+            document.getElementById('user-display-name').innerText = currentUser.name;
+            document.getElementById('user-display-role').innerText = currentUser.role.toUpperCase();
+            document.getElementById('user-avatar-text').innerText = currentUser.name.charAt(0).toUpperCase();
 
-    function renderMessage(msg) {
-      const isMe = msg.sender_id === currentUser.id;
-      const time = new Date(msg.created_at || Date.now()).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
-      const msgDiv = document.createElement('div');
-      msgDiv.className = `flex flex-col ${isMe ? 'items-end' : 'items-start'} my-1`;
-      
-      msgDiv.innerHTML = `
-        <div class="${isMe ? 'bubble-out' : 'bubble-in'} rounded-lg px-3 py-1.5 text-xs text-[#111b21] max-w-xs md:max-w-md shadow-sm relative">
-          ${!isMe ? `<p class="text-[10px] font-bold text-[#008069] mb-0.5">${msg.users?.name || msg.sender_id}</p>` : ''}
-          <p class="leading-relaxed whitespace-pre-wrap mr-10">${msg.content}</p>
-          <span class="absolute bottom-1 right-2 text-[9px] text-[#667781]">${time}</span>
-        </div>
-      `;
-      document.getElementById('messages-container').appendChild(msgDiv);
-      document.getElementById('messages-container').scrollTop = document.getElementById('messages-container').scrollHeight;
-    }
+            loadFriendsAndChats();
+            initRealtime();
+        }
 
-    // CHAT FORM SUBMIT
-    document.getElementById('chat-form').addEventListener('submit', async (e) => {
-      e.preventDefault();
-      const input = document.getElementById('chat-input');
-      const content = input.value.trim();
-      if (!content || !currentRoomId) return;
+        function handleLogout() {
+            localStorage.removeItem('ttq_user');
+            location.reload();
+        }
 
-      input.value = '';
-      await supabaseClient.from('messages').insert([{ room_id: currentRoomId, sender_id: currentUser.id, content }]);
-    });
+        function switchTab(tab) {
+            document.getElementById('tab-chats').classList.add('hidden');
+            document.getElementById('tab-friends').classList.add('hidden');
+            document.getElementById('tab-settings').classList.add('hidden');
 
-    // MEDIA ATTACHMENTS
-    function toggleMediaPopup() { document.getElementById('media-popup').classList.toggle('hidden'); }
-    function triggerFileUpload(accept) {
-      const fileInput = document.getElementById('hidden-file-input');
-      fileInput.accept = accept;
-      fileInput.click();
-      toggleMediaPopup();
-    }
+            document.getElementById('tab-' + tab).classList.remove('hidden');
+        }
 
-    function handleFileSelect(e) {
-      const file = e.target.files[0];
-      if (file) alert(`File ${file.name} terpilih! (Fitur siap dikirim)`);
-    }
+        function openModal(title, content) {
+            document.getElementById('modal-title').innerText = title;
+            document.getElementById('modal-content').innerHTML = content;
+            document.getElementById('settings-modal').classList.remove('hidden');
+        }
 
-    function toggleRightPanel() { document.getElementById('right-panel').classList.toggle('hidden'); document.getElementById('right-panel').classList.toggle('flex'); }
+        function closeSettingsModal() {
+            document.getElementById('settings-modal').classList.add('hidden');
+        }
 
-    document.getElementById('logout-btn').addEventListener('click', () => location.reload());
-    if (window.lucide) lucide.createIcons();
-  </script>
+        async function sendFriendRequest() {
+            const targetId = document.getElementById('target-id-input').value.trim();
+            if(!targetId || targetId === currentUser.id) return alert('ID Target tidak valid!');
+
+            const { error } = await supabase.from('friendships').insert([{
+                user_id_1: currentUser.id,
+                user_id_2: targetId,
+                status: 'pending',
+                action_user_id: currentUser.id
+            }]);
+
+            if (error) {
+                alert('Gagal mengirim permintaan pertemanan.');
+            } else {
+                alert('Permintaan pertemanan terkirim!');
+                document.getElementById('target-id-input').value = '';
+            }
+        }
+
+        async function loadFriendsAndChats() {
+            // Load friend requests
+            const { data: requests } = await supabase.from('friendships')
+                .select('*, users!friendships_user_id_1_fkey(name)')
+                .eq('user_id_2', currentUser.id)
+                .eq('status', 'pending');
+
+            const reqContainer = document.getElementById('friend-requests-list');
+            if (requests && requests.length > 0) {
+                document.getElementById('friend-badge').classList.remove('hidden');
+                reqContainer.innerHTML = requests.map(r => `
+                    <div class="p-2 bg-slate-800 rounded-xl flex items-center justify-between text-xs">
+                        <div><b>${r.user_id_1}</b> (${r.users?.name || 'User'})</div>
+                        <button onclick="acceptFriend('${r.id}')" class="bg-emerald-600 px-2 py-1 rounded">Terima</button>
+                    </div>
+                `).join('');
+            } else {
+                document.getElementById('friend-badge').classList.add('hidden');
+                reqContainer.innerHTML = '<p class="text-xs text-slate-500 p-2">Tidak ada permintaan pertemanan.</p>';
+            }
+
+            // Load accepted friends for chat list
+            const { data: friends } = await supabase.from('friendships')
+                .select('*')
+                .or(`user_id_1.eq.${currentUser.id},user_id_2.eq.${currentUser.id}`)
+                .eq('status', 'accepted');
+
+            const chatContainer = document.getElementById('chat-list-container');
+            if (friends && friends.length > 0) {
+                const friendIds = friends.map(f => f.user_id_1 === currentUser.id ? f.user_id_2 : f.user_id_1);
+                const { data: friendUsers } = await supabase.from('users').select('*').in('id', friendIds);
+
+                chatContainer.innerHTML = friendUsers.map(u => `
+                    <div onclick="selectChat('${u.id}', '${u.name}')" class="p-3 bg-slate-800/40 hover:bg-slate-800 border border-slate-800 rounded-xl cursor-pointer flex items-center gap-3 transition">
+                        <div class="w-8 h-8 rounded-full bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-xs">${u.name.charAt(0)}</div>
+                        <div>
+                            <div class="text-sm font-semibold text-white">${u.name}</div>
+                            <div class="text-xs text-slate-400">${u.id}</div>
+                        </div>
+                    </div>
+                `).join('');
+            } else {
+                chatContainer.innerHTML = '<p class="text-xs text-slate-500 p-2">Belum ada teman. Tambah teman dulu di menu pertemanan!</p>';
+            }
+        }
+
+        async function acceptFriend(friendshipId) {
+            await supabase.from('friendships').update({ status: 'accepted' }).eq('id', friendshipId);
+            loadFriendsAndChats();
+        }
+
+        function selectChat(id, name) {
+            activeChatUser = { id, name };
+            document.getElementById('no-chat-selected').classList.add('hidden');
+            document.getElementById('active-chat-view').classList.remove('hidden');
+            document.getElementById('chat-target-name').innerText = name;
+            document.getElementById('chat-target-id').innerText = id;
+            loadMessages();
+        }
+
+        async function loadMessages() {
+            if (!activeChatUser) return;
+            const { data: msgs } = await supabase.from('messages')
+                .select('*')
+                .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${activeChatUser.id}),and(sender_id.eq.${activeChatUser.id},receiver_id.eq.${currentUser.id})`)
+                .order('created_at', { ascending: true });
+
+            const box = document.getElementById('messages-container');
+            if (msgs) {
+                box.innerHTML = msgs.map(m => {
+                    const isMe = m.sender_id === currentUser.id;
+                    return `
+                        <div class="flex ${isMe ? 'justify-end' : 'justify-start'}">
+                            <div class="max-w-xs px-4 py-2.5 rounded-2xl text-sm ${isMe ? 'bg-emerald-600 text-white rounded-br-none' : 'bg-slate-800 text-slate-200 rounded-bl-none'}">
+                                ${m.content}
+                            </div>
+                        </div>
+                    `;
+                }).join('');
+                box.scrollTop = box.scrollHeight;
+            }
+        }
+
+        async function sendMessage(e) {
+            e.preventDefault();
+            const input = document.getElementById('message-input');
+            const text = input.value.trim();
+            if (!text || !activeChatUser) return;
+
+            input.value = '';
+            await supabase.from('messages').insert([{
+                sender_id: currentUser.id,
+                receiver_id: activeChatUser.id,
+                content: text
+            }]);
+            loadMessages();
+        }
+
+        function initRealtime() {
+            supabase
+                .channel('public-realtime')
+                .on('postgres_changes', { event: '*', schema: 'public' }, () => {
+                    loadFriendsAndChats();
+                    if (activeChatUser) loadMessages();
+                })
+                .subscribe();
+        }
+    </script>
 </body>
 </html>
