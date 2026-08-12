@@ -67,9 +67,19 @@
           <button id="logout-btn" title="Logout" class="p-2 hover:bg-slate-800 rounded-xl text-slate-400 hover:text-red-400 transition"><i data-lucide="log-out" class="w-5 h-5"></i></button>
         </div>
 
+        <!-- MENU PERSATUAN / NOTIFIKASI PERSETUJUAN -->
+        <div id="pending-section" class="hidden p-3 border-b border-slate-800 bg-amber-500/10">
+          <p class="text-xs font-bold text-amber-400 uppercase mb-2 flex items-center">
+            <i data-lucide="user-check" class="w-4 h-4 mr-1"></i> Persetujuan Staf Baru
+          </p>
+          <div id="pending-list" class="space-y-2 max-h-40 overflow-y-auto">
+            <!-- Pending items render here -->
+          </div>
+        </div>
+
         <div class="p-3">
           <p class="text-xs font-bold text-slate-500 uppercase px-2 mb-2">Daftar Percakapan</p>
-          <div id="room-list" class="space-y-1 overflow-y-auto max-h-[calc(100vh-140px)]">
+          <div id="room-list" class="space-y-1 overflow-y-auto max-h-[calc(100vh-200px)]">
             <!-- Room items will render here -->
           </div>
         </div>
@@ -99,7 +109,7 @@
   <script>
     // === KONFIGURASI SUPABASE ===
     const SUPABASE_URL = 'https://mbhdkjuqejcilqifpeoi.supabase.co';
-    const SUPABASE_ANON_KEY = 'sb_publishable_ptBIvCMuOXLjOV3UR3HQbQ_vDI6cXWf';
+    const SUPABASE_ANON_KEY = 'sb_publishable_ptBiVCMu0XLjOV3UR3HQbQ_vDI6c';
 
     // Inisialisasi Supabase Client
     const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -149,11 +159,17 @@
 
         const { error } = await supabaseClient.from('users').insert([{ id, name, password, role: 'staf', pending_coordinator_id: coordinator_id }]);
         if (error) return alert('Gagal Daftar: ' + error.message);
-        alert('Pendaftaran Berhasil! Silakan tunggu konfirmasi koordinator / login.');
+        alert('Pendaftaran Berhasil! Silakan tunggu konfirmasi koordinator Anda.');
         location.reload();
       } else {
         const { data, error } = await supabaseClient.from('users').select('*').eq('id', id).eq('password', password).single();
         if (error || !data) return alert('ID atau Password Salah!');
+        
+        // Cek jika status staf masih pending
+        if (data.role === 'staf' && !data.coordinator_id && data.pending_coordinator_id) {
+          return alert('Akun Anda masih dalam proses persetujuan oleh Koordinator!');
+        }
+
         currentUser = data;
         initApp();
       }
@@ -167,7 +183,64 @@
       document.getElementById('user-role-display').innerText = currentUser.role.toUpperCase() + ` (${currentUser.id})`;
       document.getElementById('user-avatar').innerText = currentUser.name ? currentUser.name.charAt(0) : 'U';
 
+      loadPendingStaff();
       loadRooms();
+    }
+
+    // LOAD PENDING STAFF FOR COORDINATOR / ADMIN
+    async function loadPendingStaff() {
+      if (currentUser.role !== 'koordinator' && currentUser.role !== 'admin') return;
+
+      let query = supabaseClient.from('users').select('*').not('pending_coordinator_id', 'is', null);
+      if (currentUser.role === 'koordinator') {
+        query = query.eq('pending_coordinator_id', currentUser.id);
+      }
+
+      const { data } = await query;
+      const section = document.getElementById('pending-section');
+      const list = document.getElementById('pending-list');
+
+      if (data && data.length > 0) {
+        section.classList.remove('hidden');
+        list.innerHTML = '';
+        data.forEach(staf => {
+          list.innerHTML += `
+            <div class="bg-slate-800 p-2 rounded-lg flex items-center justify-between">
+              <div>
+                <p class="text-xs font-bold text-slate-200">${staf.name}</p>
+                <p class="text-[10px] text-slate-400">ID: ${staf.id}</p>
+              </div>
+              <div class="flex space-x-1">
+                <button onclick="approveStaff('${staf.id}', '${staf.pending_coordinator_id}')" class="bg-emerald-500 hover:bg-emerald-600 text-slate-950 font-bold px-2 py-1 rounded text-[10px]">Terima</button>
+                <button onclick="rejectStaff('${staf.id}')" class="bg-red-500 hover:bg-red-600 text-white font-bold px-2 py-1 rounded text-[10px]">Tolak</button>
+              </div>
+            </div>
+          `;
+        });
+      } else {
+        section.classList.add('hidden');
+      }
+    }
+
+    // APPROVE STAFF
+    async function approveStaff(stafId, coordId) {
+      const { error } = await supabaseClient.from('users').update({ 
+        coordinator_id: coordId, 
+        pending_coordinator_id: null 
+      }).eq('id', stafId);
+
+      if (error) return alert('Gagal menyetujui staf: ' + error.message);
+      alert('Staf berhasil diterima!');
+      loadPendingStaff();
+    }
+
+    // REJECT STAFF
+    async function rejectStaff(stafId) {
+      if (!confirm('Yakin ingin menolak pendaftaran staf ini?')) return;
+      const { error } = await supabaseClient.from('users').delete().eq('id', stafId);
+      if (error) return alert('Gagal menolak staf: ' + error.message);
+      alert('Pendaftaran staf ditolak.');
+      loadPendingStaff();
     }
 
     // LOAD ROOMS
