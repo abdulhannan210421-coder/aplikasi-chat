@@ -10,11 +10,11 @@
     <script src="https://unpkg.com/lucide@latest"></script>
     <script>
         // =========================================================
-        // KONFIGURASI SUPABASE
+        // KONFIGURASI SUPABASE (MENGGUNAKAN NAMA supabaseClient)
         // =========================================================
         const SUPABASE_URL = 'https://mbhdkjuqejcilqifpeoi.supabase.co';
         const SUPABASE_KEY = 'sb_publishable_ptBIvCMuOXLjOV3UR3HQbQ_VDi6cXWf';
-        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
+        const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_KEY);
     </script>
     <style>
         body { font-family: 'Plus Jakarta Sans', sans-serif; }
@@ -238,7 +238,7 @@
             const id = document.getElementById('login-id').value.trim();
             const pass = document.getElementById('login-pass').value.trim();
 
-            const { data, error } = await supabase.from('users').select('*').eq('id', id).single();
+            const { data, error } = await supabaseClient.from('users').select('*').eq('id', id).single();
             if (error || !data || data.password !== pass) {
                 alert('ID atau Password Salah!');
                 return;
@@ -254,7 +254,7 @@
             const name = document.getElementById('reg-name').value.trim();
             const pass = document.getElementById('reg-pass').value.trim();
 
-            const { error } = await supabase.from('users').insert([{ id, name, role: 'staf', password: pass }]);
+            const { error } = await supabaseClient.from('users').insert([{ id, name, role: 'staf', password: pass }]);
             if (error) {
                 alert('Gagal mendaftar. Pastikan ID unik dan belum terpakai.');
                 return;
@@ -303,7 +303,7 @@
             const targetId = document.getElementById('target-id-input').value.trim();
             if(!targetId || targetId === currentUser.id) return alert('ID Target tidak valid!');
 
-            const { error } = await supabase.from('friendships').insert([{
+            const { error } = await supabaseClient.from('friendships').insert([{
                 user_id_1: currentUser.id,
                 user_id_2: targetId,
                 status: 'pending',
@@ -319,7 +319,7 @@
         }
 
         async function loadFriendsAndChats() {
-            const { data: requests } = await supabase.from('friendships')
+            const { data: requests } = await supabaseClient.from('friendships')
                 .select('*, users!friendships_user_id_1_fkey(name)')
                 .eq('user_id_2', currentUser.id)
                 .eq('status', 'pending');
@@ -338,7 +338,7 @@
                 reqContainer.innerHTML = '<p class="text-xs text-slate-500 p-2">Tidak ada permintaan pertemanan.</p>';
             }
 
-            const { data: friends } = await supabase.from('friendships')
+            const { data: friends } = await supabaseClient.from('friendships')
                 .select('*')
                 .or(`user_id_1.eq.${currentUser.id},user_id_2.eq.${currentUser.id}`)
                 .eq('status', 'accepted');
@@ -346,7 +346,7 @@
             const chatContainer = document.getElementById('chat-list-container');
             if (friends && friends.length > 0) {
                 const friendIds = friends.map(f => f.user_id_1 === currentUser.id ? f.user_id_2 : f.user_id_1);
-                const { data: friendUsers } = await supabase.from('users').select('*').in('id', friendIds);
+                const { data: friendUsers } = await supabaseClient.from('users').select('*').in('id', friendIds);
 
                 chatContainer.innerHTML = friendUsers.map(u => `
                     <div onclick="selectChat('${u.id}', '${u.name}')" class="p-3 bg-slate-800/40 hover:bg-slate-800 border border-slate-800 rounded-xl cursor-pointer flex items-center gap-3 transition">
@@ -363,7 +363,7 @@
         }
 
         async function acceptFriend(friendshipId) {
-            await supabase.from('friendships').update({ status: 'accepted' }).eq('id', friendshipId);
+            await supabaseClient.from('friendships').update({ status: 'accepted' }).eq('id', friendshipId);
             loadFriendsAndChats();
         }
 
@@ -378,7 +378,7 @@
 
         async function loadMessages() {
             if (!activeChatUser) return;
-            const { data: msgs } = await supabase.from('messages')
+            const { data: msgs } = await supabaseClient.from('messages')
                 .select('*')
                 .or(`and(sender_id.eq.${currentUser.id},receiver_id.eq.${activeChatUser.id}),and(sender_id.eq.${activeChatUser.id},receiver_id.eq.${currentUser.id})`)
                 .order('created_at', { ascending: true });
@@ -406,7 +406,7 @@
             if (!text || !activeChatUser) return;
 
             input.value = '';
-            await supabase.from('messages').insert([{
+            await supabaseClient.from('messages').insert([{
                 sender_id: currentUser.id,
                 receiver_id: activeChatUser.id,
                 content: text
@@ -415,7 +415,7 @@
         }
 
         function initRealtime() {
-            supabase
+            supabaseClient
                 .channel('public-realtime')
                 .on('postgres_changes', { event: '*', schema: 'public' }, () => {
                     loadFriendsAndChats();
